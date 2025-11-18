@@ -1,12 +1,15 @@
 "use client";
 
-import {email, z} from "zod";
+import {email, set, z} from "zod";
 import { AlertOctagon, OctagonAlert } from "lucide-react";
 import {zodResolver} from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
+import { AuthClient } from "@/lib/auth-client";
 import { Card ,CardContent} from "@/components/ui/card";
 import {Alert , AlertTitle} from "@/components/ui/alert";
+import Link from "next/link";
 import {
     Form,
     FormControl,
@@ -17,6 +20,8 @@ import {
 
 }from "@/components/ui/form";
 import { useForm } from "react-hook-form";
+import { useState } from "react";
+
 
 const formSchema = z.object({
     email: z.string().email(),
@@ -26,6 +31,10 @@ const formSchema = z.object({
 
 export const SignInView = () => {
 
+    const router = useRouter();
+    const [error,setError] = useState<string|null>(null);
+    const [pending,setPending] = useState(false);
+
     const form = useForm<z.infer<typeof formSchema>>({
         resolver:zodResolver(formSchema),
         defaultValues:{
@@ -33,13 +42,36 @@ export const SignInView = () => {
             password: "",
         },
     });
+
+    const OnSubmit = async(data: z.infer<typeof formSchema>) => {
+        setError(null);
+        setPending(true);
+
+         AuthClient.signIn.email(
+            {
+                email: data.email,
+                password: data.password,
+            },
+            {
+                onSuccess:() =>{
+                    router.push("/");
+                    setPending(false);
+                },
+                onError: (error) =>{
+                    setError(error.error.message)
+                }
+            },
+        );
+
+        
+    };
     
     return(
         <div className="flex flex-col gap-6">
         <Card className="overflow-hidden p-0">
            <CardContent className="grid p-0 md:grid-cols-2">
             <Form {...form}>
-                <form className="p-6 md:p-8"> 
+                <form onSubmit={form.handleSubmit(OnSubmit)}className="p-6 md:p-8"> 
                     <div className="flex flex-col gap-6">
                         <div className="flex flex-col items-center text-center">
                             <h1 className="text-2xl font-bold">
@@ -87,13 +119,15 @@ export const SignInView = () => {
                             )}
                             />
                         </div>
-                        {true && (
+                        {!!error && (
                             <Alert className="bg-destructive/10 border-none" >
                                 <AlertOctagon className="h-4 w-4 !text-destructive"/>
-                                <AlertTitle>Error</AlertTitle>
+                                <AlertTitle>{error}</AlertTitle>
                             </Alert>
                         )}
-                        <Button type="submit"
+                        <Button 
+                        disabled={pending}
+                        type="submit"
                         className="w-full">
                             Sign in
                         </Button>
@@ -103,12 +137,18 @@ export const SignInView = () => {
                         </span>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <Button variant="outline" type="button" className="w-full">
+                            <Button  disabled= {pending} variant="outline" type="button" className="w-full">
                                 Google
                             </Button>
-                            <Button variant="outline" type="button" className="w-full">
+                            <Button disabled= {pending} variant="outline" type="button" className="w-full">
                                 Github
                             </Button>
+                        </div>
+                        <div className="text-center text-sm">
+                            Don&apos;t have an account?{" "}
+                           <Link href="/sign-up"className="underline underline-offest-4">
+                            Sign Up
+                            </Link>
                         </div>
                     </div>
                      
@@ -121,6 +161,11 @@ export const SignInView = () => {
              </div>
           </CardContent>
        </Card>
+
+       <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4"> 
+        By clicking continue, you agree to our <a href = "#"> Terms of Service</a> and <a href="#">Privacy Policy</a>
+
+       </div>
     </div>
     )
 }
