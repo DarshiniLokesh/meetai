@@ -24,10 +24,15 @@ import { useState } from "react";
 
 
 const formSchema = z.object({
+    name : z.string().min(1,{message: 'Name is required'}),
     email: z.string().email(),
     password: z.string().min(1,{message:"Password is Required"}),
     confirmPassword: z.string().min(1,{message:"Password is Required"}),
 
+})
+.refine((data) => data.password === data.confirmPassword,{
+    message: "Passwords dont match",
+    path: ["confirmPassword"],
 });
 
 export const SignUpView = () => {
@@ -39,8 +44,10 @@ export const SignUpView = () => {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver:zodResolver(formSchema),
         defaultValues:{
+            name:"",
             email: "",
             password: "",
+            confirmPassword:"",
         },
     });
 
@@ -48,8 +55,9 @@ export const SignUpView = () => {
         setError(null);
         setPending(true);
 
-         AuthClient.signIn.email(
+         AuthClient.signUp.email(
             {
+                name: data.name,
                 email: data.email,
                 password: data.password,
             },
@@ -76,11 +84,30 @@ export const SignUpView = () => {
                     <div className="flex flex-col gap-6">
                         <div className="flex flex-col items-center text-center">
                             <h1 className="text-2xl font-bold">
-                                Welcome Back!
+                                Let&apos;s get started
                             </h1>
                             <p className="text-muted-foreground text-balance">
-                                Login to your account
+                                Create to your account
                             </p>
+                        </div>
+                        <div className="grid gap-3">
+                            <FormField
+                            control={form.control}
+                            name="name"
+                            render = {({field}) => (
+                                <FormItem>
+                                    <FormLabel>Name</FormLabel>
+                                    <FormControl>
+                                        <Input 
+                                        type="text" 
+                                        placeholder="Jhon Doe"
+                                        {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                            />
                         </div>
                         <div className="grid gap-3">
                             <FormField
@@ -120,6 +147,25 @@ export const SignUpView = () => {
                             )}
                             />
                         </div>
+                        <div className="grid gap-3">
+                            <FormField
+                            control={form.control}
+                            name="confirmPassword"
+                            render = {({field}) => (
+                                <FormItem>
+                                    <FormLabel>Confirm Password</FormLabel>
+                                    <FormControl>
+                                        <Input 
+                                        type="password" 
+                                        placeholder="********"
+                                        {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                        </div>
                         {!!error && (
                             <Alert className="bg-destructive/10 border-none" >
                                 <AlertOctagon className="h-4 w-4 !text-destructive"/>
@@ -130,7 +176,7 @@ export const SignUpView = () => {
                         disabled={pending}
                         type="submit"
                         className="w-full">
-                            Sign in
+                            Sign Up
                         </Button>
                         <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
                         <span className="bg-card text-muted-foreground relative z-10 px-2">
@@ -146,8 +192,8 @@ export const SignUpView = () => {
                             </Button>
                         </div>
                         <div className="text-center text-sm">
-                            Don&apos;t have an account?{" "}
-                           <Link href="/sign-up"className="underline underline-offest-4">
+                            Already have an account?{" "}
+                           <Link href="/sign-in"className="underline underline-offest-4">
                             Sign Up
                             </Link>
                         </div>
