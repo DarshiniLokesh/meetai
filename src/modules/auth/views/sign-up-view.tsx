@@ -3,6 +3,8 @@
 import {email, set, z} from "zod";
 import { AlertOctagon, OctagonAlert } from "lucide-react";
 import {zodResolver} from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import {FaGithub, FaGoogle} from "react-icons/fa";
 
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
@@ -37,7 +39,7 @@ const formSchema = z.object({
 
 export const SignUpView = () => {
 
-    
+    const router = useRouter();
     const [error,setError] = useState<string|null>(null);
     const [pending,setPending] = useState(false);
 
@@ -66,6 +68,7 @@ export const SignUpView = () => {
                 onSuccess:() =>{
                     
                     setPending(false);
+                    router.push("/");
                 },
                 onError: (error) =>{
                     setError(error.error.message)
@@ -213,7 +216,7 @@ export const SignUpView = () => {
                             variant="outline" 
                             type="button" 
                             className="w-full">
-                                Google
+                                <FaGoogle/>
                             </Button>
                             <Button 
                             disabled= {pending} 
@@ -221,7 +224,7 @@ export const SignUpView = () => {
                             variant="outline" 
                             type="button" 
                             className="w-full">
-                                Github
+                                <FaGithub/>
                             </Button>
                         </div>
                         <div className="text-center text-sm">

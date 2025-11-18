@@ -1,12 +1,19 @@
 
-import { SignUpView } from "@/modules/auth/sign-up-view";
-const Page = () =>{
+import { SignUpView } from "@/modules/auth/views/sign-up-view";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+
+const Page = async () =>{
    
-    return (
-        
-            <SignUpView/>
-          
-    );
+     const session = await auth.api.getSession({
+        headers: await headers()
+      });
+    
+      if(!!session){
+        redirect("/")
+      }
+    return <SignUpView/>
 }
 
 export default Page;
