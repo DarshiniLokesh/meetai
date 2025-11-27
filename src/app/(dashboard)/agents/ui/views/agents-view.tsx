@@ -6,6 +6,7 @@ import{ useSuspenseQuery} from "@tanstack/react-query"
 import { ErrorState } from "@/components/error-state";
 
 
+
 interface Props{
 
 }
@@ -18,6 +19,7 @@ export const AgentsView = () =>{
 
     return(
         <div>
+            
             {JSON.stringify(data,null,2)}
         </div>
     )
