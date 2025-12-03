@@ -5,6 +5,7 @@ import { TRPCReactProvide } from "@/trpc/client";
 
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import{NuqsAdapter} from "nuqs/adapters/next/app";
 
 const inter = Inter({
   
@@ -24,6 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    <NuqsAdapter>
     <TRPCReactProvide>
     <html lang="en">
       <body
@@ -34,5 +36,6 @@ export default function RootLayout({
       </body>
     </html>
     </TRPCReactProvide>
+    </NuqsAdapter>
   );
 }
