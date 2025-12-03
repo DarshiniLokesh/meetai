@@ -31,7 +31,7 @@ export const AgentForm =({
     const queryClient = useQueryClient();
 
     const getManyQueryOptions = useMemo(
-        () => trpc.agents.getMany.queryOptions(),
+        () => trpc.agents.getMany.queryOptions({}),
         [trpc.agents.getMany]
     );
 
