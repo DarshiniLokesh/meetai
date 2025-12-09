@@ -3,12 +3,29 @@ import { db } from "@/db";
 import { z } from "zod";
 import { and, count, desc, eq, getTableColumns, ilike} from "drizzle-orm";
 
-import { meetings } from "@/db/schema";
+import {  meetings } from "@/db/schema";
 import { TRPCError } from "@trpc/server";
 
 import { DEFAULT_PAGE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, DEFAULT_PAGE_SIZE } from "@/constants";
+import { meetingsInsertSchema } from "../schema";
+
 
 export const meetingsRouter = createTRPCRouter({
+    create: protectedProcedure
+    .input(meetingsInsertSchema)
+    .mutation(async({input,ctx})=> {
+        const[createdMeeting] = await db
+        .insert(meetings)
+        .values({
+            ...input,
+            userId: ctx.auth.user.id,
+        })
+        .returning();
+
+        return createdMeeting;
+    }),
+
+
 
     
     getOne: protectedProcedure.input(z.object({id:z.string()})).query(async({input,ctx}) => {
@@ -26,7 +43,7 @@ export const meetingsRouter = createTRPCRouter({
         );
 
         if(!existingMeeting){
-            throw new TRPCError({code:"NOT_FOUND", message:"Agent not Found"})
+            throw new TRPCError({code:"NOT_FOUND", message:"Meeting not Found"})
         }
 
         
