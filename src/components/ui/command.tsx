@@ -4,7 +4,7 @@ import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
 import { SearchIcon } from "lucide-react"
 
-import {Drawer,DrawerContent,DrawerHeader,DrawerTitle,DrawerDescription} from "@/components/ui/drawer";
+import {Drawer,DrawerContent,DrawerHeader,DrawerTitle} from "@/components/ui/drawer";
 
 import { cn } from "@/lib/utils"
 import {

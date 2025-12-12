@@ -1,4 +1,3 @@
-import { desc } from "drizzle-orm";
 import { Loader2Icon } from "lucide-react";
 
 interface Props{

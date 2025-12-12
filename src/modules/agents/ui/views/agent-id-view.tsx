@@ -10,7 +10,6 @@ import { GeneratedAvatar } from "@/components/generated-avatar";
 import { Badge } from "@/components/ui/badge";
 import { VideoIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { error } from "console";
 import { toast } from "sonner";
 import { useConfirm } from "../../hooks/use-confirm";
 import { UpdateAgentDialog } from "../components/update-agent-dialog";

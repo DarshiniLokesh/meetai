@@ -1,11 +1,10 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { PlusIcon, XCircleIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 
 import { useState } from "react";
 
 
-import { DEFAULT_PAGE } from "@/constants";
 import { NewMeetingDialog } from "./new-meeting-dialog";
 
 

@@ -1,11 +1,9 @@
 import { useTRPC } from "@/trpc/client";
 import { AgentGetOne } from "../../types";
-import { useRouter } from "next/navigation";
 import {  useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { GeneratedAvatar } from "@/components/generated-avatar";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl,FormField,FormItem,FormLabel,FormMessage } from "@/components/ui/form";
@@ -27,7 +25,6 @@ export const AgentForm =({
     initialValue,
 }:AgentFormProps) => {
     const trpc = useTRPC();
-    const router = useRouter();
     const queryClient = useQueryClient();
 
     const getManyQueryOptions = useMemo(
@@ -52,7 +49,7 @@ export const AgentForm =({
         }
 
         onSuccess?.();
-    }, [queryClient, getManyQueryOptions.queryKey, getOneQueryOptions?.queryKey, onSuccess]);
+    }, [queryClient, getManyQueryOptions.queryKey, getOneQueryOptions, onSuccess]);
 
     const createMutationOptions = useMemo(
         () => trpc.agents.create.mutationOptions({

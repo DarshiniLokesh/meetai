@@ -1,4 +1,3 @@
-import { desc } from "drizzle-orm";
 import { AlertCircleIcon } from "lucide-react";
 
 interface Props{
