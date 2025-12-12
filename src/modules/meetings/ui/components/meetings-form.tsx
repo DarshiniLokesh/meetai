@@ -1,6 +1,5 @@
 import { useTRPC } from "@/trpc/client";
 import { MeetingGetOne } from "../../types"
-import { useRouter } from "next/navigation";
 import {  useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -28,7 +27,6 @@ export const MeetingForm =({
     initialValue,
 }:MeetingFormProps) => {
     const trpc = useTRPC();
-    const router = useRouter();
     const queryClient = useQueryClient();
     const [openNewAgentDialog,setOpenNewAgentDialog] = useState(false);
     const[agentSearch,setAgentSearch] = useState("");
@@ -63,7 +61,7 @@ export const MeetingForm =({
         }
 
         onSuccess?.(data.id);
-    }, [queryClient, getManyQueryOptions.queryKey, getOneQueryOptions?.queryKey, onSuccess]);
+    }, [queryClient, getManyQueryOptions.queryKey, getOneQueryOptions, onSuccess]);
 
     const createMutationOptions = useMemo(
         () => trpc.meetings.create.mutationOptions({
