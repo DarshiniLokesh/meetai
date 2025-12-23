@@ -39,29 +39,38 @@ export const MeetingForm =({
         })
     );
 
-    const getManyQueryOptions = useMemo(
+    const getManyAgentsQueryOptions = useMemo(
         () => trpc.agents.getMany.queryOptions({}),
         [trpc.agents.getMany]
     );
 
-    const getOneQueryOptions = useMemo(
-        () => initialValue?.id ? trpc.agents.getOne.queryOptions({ id: initialValue.id }) : null,
-        [trpc.agents.getOne, initialValue?.id]
+    const getManyMeetingsQueryOptions = useMemo(
+        () => trpc.meetings.getMany.queryOptions({}),
+        [trpc.meetings.getMany]
     );
 
-    const handleSuccess = useCallback(async (data: MeetingGetOne) => {
+    const getOneMeetingQueryOptions = useMemo(
+        () => initialValue?.id ? trpc.meetings.getOne.queryOptions({ id: initialValue.id }) : null,
+        [trpc.meetings.getOne, initialValue?.id]
+    );
+
+    const handleSuccess = useCallback(async (data: { id: string }) => {
         await queryClient.invalidateQueries({
-            queryKey: getManyQueryOptions.queryKey,
+            queryKey: getManyAgentsQueryOptions.queryKey,
         });
 
-        if(getOneQueryOptions){
+        await queryClient.invalidateQueries({
+            queryKey: getManyMeetingsQueryOptions.queryKey,
+        });
+
+        if(getOneMeetingQueryOptions){
             await queryClient.invalidateQueries({
-                queryKey: getOneQueryOptions.queryKey,
+                queryKey: getOneMeetingQueryOptions.queryKey,
             });
         }
 
         onSuccess?.(data.id);
-    }, [queryClient, getManyQueryOptions.queryKey, getOneQueryOptions, onSuccess]);
+    }, [queryClient, getManyAgentsQueryOptions.queryKey, getManyMeetingsQueryOptions.queryKey, getOneMeetingQueryOptions, onSuccess]);
 
     const createMutationOptions = useMemo(
         () => trpc.meetings.create.mutationOptions({
