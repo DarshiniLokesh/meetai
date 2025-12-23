@@ -13,6 +13,10 @@ import { toast } from "sonner";
 import { MeetingIdViewHeader } from "../components/meeting-id-view-header";
 import { UpdateMeetingDialog } from "../components/update-meeting-dialog";
 import { useConfirm } from "@/modules/agents/hooks/use-confirm";
+import { UpcomingState } from "../components/upcoming-state";
+import { ActiveState } from "../components/active-state";
+import { CancelledState } from "../components/cancelled-state";
+import { ProcessingState } from "../components/processing-state";
 
 interface Props {
     meetingId: string;
@@ -50,6 +54,12 @@ export const MeetingIdView = ({ meetingId }: Props) => {
         await removeMeeting.mutateAsync({ id: meetingId });
     };
 
+    const isActive = data.status === "active";
+    const isUpcoming = data.status === "upcoming";
+    const isCancelled = data.status === "canclled";
+    const isCompleted = data.status === "completed";
+    const isProcessing =data.status === "processing";
+
     return (
         <>
             <RemoveConfirmation />
@@ -65,77 +75,16 @@ export const MeetingIdView = ({ meetingId }: Props) => {
                     onEdit={() => setUpdateMeetingDialogOpen(true)}
                     onRemove={handleRemoveMeeting}
                 />
-                <div className="bg-white rounded-lg border">
-                    <div className="px-4 py-5 gap-y-5 flex flex-col">
-                        <div className="flex items-center gap-x-3">
-                            <h2 className="text-2xl font-medium">{data.name}</h2>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                        <Badge
-                            variant="outline"
-                            className="flex items-center gap-x-2 [&>svg]:size-4"
-                        >
-                            <CalendarIcon />
-                            Status: {data.status}
-                        </Badge>
-                        {data.startedAt && (
-                            <Badge
-                                variant="outline"
-                                className="flex items-center gap-x-2 [&>svg]:size-4"
-                            >
-                                <ClockIcon />
-                                Started: {format(new Date(data.startedAt), "PPp")}
-                            </Badge>
-                        )}
-                        {data.endedAt && (
-                            <Badge
-                                variant="outline"
-                                className="flex items-center gap-x-2 [&>svg]:size-4"
-                            >
-                                <ClockIcon />
-                                Ended: {format(new Date(data.endedAt), "PPp")}
-                            </Badge>
-                        )}
-                    </div>
-
-                    {data.summary && (
-                        <div className="flex flex-col gap-y-4">
-                            <p className="text-lg font-medium">Summary</p>
-                            <p className="text-neutral-800">{data.summary}</p>
-                        </div>
-                    )}
-
-                    {data.transcriptUrl && (
-                        <div className="flex flex-col gap-y-2">
-                            <p className="text-lg font-medium">Transcript</p>
-                            <a
-                                href={data.transcriptUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline"
-                            >
-                                View Transcript
-                            </a>
-                        </div>
-                    )}
-
-                    {data.recordingUrl && (
-                        <div className="flex flex-col gap-y-2">
-                            <p className="text-lg font-medium">Recording</p>
-                            <a
-                                href={data.recordingUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline"
-                            >
-                                View Recording
-                            </a>
-                        </div>
-                    )}
-                </div>
+                {isCancelled && <CancelledState/>}
+                {isProcessing && <ProcessingState/>}
+                {isCompleted && <div>Completed</div>}
+                {isActive && <ActiveState meetingId={meetingId}/>}
+                {isUpcoming && <UpcomingState 
+                meetingId={meetingId}
+                onCancelMeeting={() =>{}}
+                isCancelling={false}
+                />}
             </div>
-        </div>
         </>
     );
 };
