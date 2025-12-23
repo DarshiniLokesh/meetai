@@ -3,28 +3,75 @@
 import { ErrorState } from "@/components/error-state";
 import { LoadingState } from "@/components/loading-state";
 import { useTRPC } from "@/trpc/client";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, ClockIcon } from "lucide-react";
 import { format } from "date-fns";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { MeetingIdViewHeader } from "../components/meeting-id-view-header";
+import { UpdateMeetingDialog } from "../components/update-meeting-dialog";
+import { useConfirm } from "@/modules/agents/hooks/use-confirm";
 
 interface Props {
     meetingId: string;
 }
 
 export const MeetingIdView = ({ meetingId }: Props) => {
+    const router = useRouter();
+    const queryClient = useQueryClient();
     const trpc = useTRPC();
     const { data } = useSuspenseQuery(trpc.meetings.getOne.queryOptions({ id: meetingId }));
+    const [updateMeetingDialogOpen, setUpdateMeetingDialogOpen] = useState(false);
+
+    const removeMeeting = useMutation(
+        trpc.meetings.remove.mutationOptions({
+            onSuccess: async () => {
+                await queryClient.invalidateQueries(trpc.meetings.getMany.queryOptions({}));
+                router.push("/meetings");
+            },
+            onError: (error) => {
+                toast.error(error.message);
+            }
+        }),
+    );
+
+    const [RemoveConfirmation, confirmRemove] = useConfirm(
+        "Are you sure?",
+        "This action will permanently delete this meeting."
+    );
+
+    const handleRemoveMeeting = async () => {
+        const ok = await confirmRemove();
+
+        if (!ok) return;
+
+        await removeMeeting.mutateAsync({ id: meetingId });
+    };
 
     return (
-        <div className="flex-1 py-4 px-4 md:px-8 flex flex-col gap-y-4">
-            <div className="bg-white rounded-lg border">
-                <div className="px-4 py-5 gap-y-5 flex flex-col">
-                    <div className="flex items-center gap-x-3">
-                        <h2 className="text-2xl font-medium">{data.name}</h2>
-                    </div>
+        <>
+            <RemoveConfirmation />
+            <UpdateMeetingDialog
+                open={updateMeetingDialogOpen}
+                onOpenChange={setUpdateMeetingDialogOpen}
+                initialValues={data}
+            />
+            <div className="flex-1 py-4 px-4 md:px-8 flex flex-col gap-y-4">
+                <MeetingIdViewHeader
+                    meetingId={meetingId}
+                    meetingName={data.name}
+                    onEdit={() => setUpdateMeetingDialogOpen(true)}
+                    onRemove={handleRemoveMeeting}
+                />
+                <div className="bg-white rounded-lg border">
+                    <div className="px-4 py-5 gap-y-5 flex flex-col">
+                        <div className="flex items-center gap-x-3">
+                            <h2 className="text-2xl font-medium">{data.name}</h2>
+                        </div>
 
-                    <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2">
                         <Badge
                             variant="outline"
                             className="flex items-center gap-x-2 [&>svg]:size-4"
@@ -89,6 +136,7 @@ export const MeetingIdView = ({ meetingId }: Props) => {
                 </div>
             </div>
         </div>
+        </>
     );
 };
 
