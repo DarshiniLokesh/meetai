@@ -5,6 +5,7 @@ import { and, count, desc, eq, getTableColumns, ilike, sql} from "drizzle-orm";
 
 import {  agents, meetings } from "@/db/schema";
 import { TRPCError } from "@trpc/server";
+import { streamVideo } from "@/lib/stream-video";
 
 import { DEFAULT_PAGE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, DEFAULT_PAGE_SIZE } from "@/constants";
 import { meetingsInsertSchema, meetingsUpdateSchema } from "../schema";
@@ -169,8 +170,35 @@ export const meetingsRouter = createTRPCRouter({
             items: data,
             total: totalCount,
             totalPages,
-            
+
         };
     }),
-    
+    generateToken: protectedProcedure
+        .input(z.object({meetingId: z.string()}))
+        .mutation(async ({ctx, input}) => {
+            const [meeting] = await db
+                .select()
+                .from(meetings)
+                .where(
+                    and(
+                        eq(meetings.id, input.meetingId),
+                        eq(meetings.userId, ctx.auth.user.id),
+                    )
+                )
+                .limit(1);
+
+            if (!meeting) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Meeting not found"
+                });
+            }
+
+            const token = streamVideo.generateUserToken({
+                user_id: ctx.auth.user.id,
+                validity_in_seconds: 3600
+            });
+
+            return {token};
+        }),
 });
