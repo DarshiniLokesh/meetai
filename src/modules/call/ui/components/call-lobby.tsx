@@ -20,6 +20,8 @@ import "@stream-io/video-react-sdk/dist/css/styles.css";
 
 interface Props{
     onJoin: () => void;
+    error?: string | null;
+    isJoining?: boolean;
 };
 
 const VideoPlaceholder = () => {
@@ -51,7 +53,7 @@ const VideoPlaceholder = () => {
     )
  }
 
-export const CallLobby = ({onJoin}: Props) => {
+export const CallLobby = ({onJoin, error, isJoining = false}: Props) => {
     const [mounted, setMounted] = useState(false);
     
     useEffect(() => {
@@ -98,6 +100,11 @@ export const CallLobby = ({onJoin}: Props) => {
                             <ToggleVideoPreviewButton/>
 
                         </div>
+                        {error && (
+                            <div className="w-full rounded-md bg-destructive/10 border border-destructive/20 p-3">
+                                <p className="text-sm text-destructive text-center">{error}</p>
+                            </div>
+                        )}
                         <div className="flex gap-x-2 justify-between w-full">
                             <Button asChild variant="ghost">
                                 <Link href = "/meetings">
@@ -106,9 +113,10 @@ export const CallLobby = ({onJoin}: Props) => {
                             </Button>
                             <Button
                             onClick={onJoin}
+                            disabled={isJoining}
                             >
                                 <LogInIcon/>
-                                Join Call
+                                {isJoining ? "Joining..." : "Join Call"}
                             </Button>
                         </div>
 
