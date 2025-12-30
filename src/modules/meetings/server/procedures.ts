@@ -177,8 +177,12 @@ export const meetingsRouter = createTRPCRouter({
         .input(z.object({meetingId: z.string()}))
         .mutation(async ({ctx, input}) => {
             const [meeting] = await db
-                .select()
+                .select({
+                    ...getTableColumns(meetings),
+                    agent: agents,
+                })
                 .from(meetings)
+                .innerJoin(agents, eq(meetings.agentId, agents.id))
                 .where(
                     and(
                         eq(meetings.id, input.meetingId),
@@ -194,11 +198,96 @@ export const meetingsRouter = createTRPCRouter({
                 });
             }
 
+            // Ensure users exist in Stream.io
+            await streamVideo.upsertUsers([
+                { id: ctx.auth.user.id, name: ctx.auth.user.name || ctx.auth.user.email || "User" },
+                { id: meeting.agent.id, name: meeting.agent.name },
+            ]);
+
             const token = streamVideo.generateUserToken({
                 user_id: ctx.auth.user.id,
                 validity_in_seconds: 3600
             });
 
+            // Create call and connect agent BEFORE user joins - CRITICAL
+            console.log(`[generateToken] Creating call for meeting: ${input.meetingId}`);
+            const call = streamVideo.video.call("default", input.meetingId);
+            
+            // Use getOrCreate to ensure call exists - this handles both creation and retrieval
+            try {
+                console.log(`[generateToken] Calling getOrCreate for call: default:${input.meetingId}`);
+                const callResult = await call.getOrCreate({
+                    data: {
+                        created_by_id: ctx.auth.user.id,
+                        members: [
+                            { user_id: ctx.auth.user.id, role: "user" },
+                            { user_id: meeting.agent.id, role: "user" },
+                        ],
+                    },
+                });
+                console.log(`[generateToken] getOrCreate succeeded:`, JSON.stringify(callResult, null, 2));
+            } catch (createError: unknown) {
+                const errorMessage = createError instanceof Error ? createError.message : String(createError);
+                console.error(`[generateToken] getOrCreate failed:`, errorMessage);
+                console.error(`[generateToken] Error details:`, createError);
+                throw new TRPCError({
+                    code: "INTERNAL_SERVER_ERROR",
+                    message: `Failed to create call: ${errorMessage}`
+                });
+            }
+            
+            // Verify call exists by fetching it - retry if needed
+            let verified = false;
+            let lastError: unknown = null;
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const callData = await call.get();
+                    console.log(`[generateToken] Call verified on attempt ${i + 1}:`, JSON.stringify(callData, null, 2));
+                    verified = true;
+                    break;
+                } catch (error) {
+                    lastError = error;
+                    const errorMsg = error instanceof Error ? error.message : String(error);
+                    console.log(`[generateToken] Verification attempt ${i + 1} failed:`, errorMsg);
+                    if (i < 4) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+            }
+            
+            if (!verified) {
+                const errorMsg = lastError instanceof Error ? lastError.message : String(lastError);
+                console.error(`[generateToken] Call verification failed after 5 attempts. Last error:`, errorMsg);
+                throw new TRPCError({
+                    code: "INTERNAL_SERVER_ERROR",
+                    message: `Call was created but could not be verified: ${errorMsg}. Please try again.`
+                });
+            }
+            
+            console.log(`[generateToken] Call successfully created and verified: ${input.meetingId}`);
+            
+            // Wait a moment to ensure call is fully propagated in Stream.io
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Final verification - ensure call is still accessible
+            try {
+                const finalCheck = await call.get();
+                console.log(`[generateToken] Final call check passed:`, JSON.stringify(finalCheck, null, 2));
+            } catch (finalError) {
+                const errorMsg = finalError instanceof Error ? finalError.message : String(finalError);
+                console.error(`[generateToken] Final call check failed:`, errorMsg);
+                throw new TRPCError({
+                    code: "INTERNAL_SERVER_ERROR",
+                    message: `Call verification failed before returning token: ${errorMsg}`
+                });
+            }
+
+            // Note: Agent connection happens via webhook when call.session_started fires
+            // This ensures the agent connects when the call session is actually active
+            // The agent is already added as a member during call creation above
+            console.log(`[generateToken] Agent will be connected when call session starts (via webhook)`);
+
+            console.log(`[generateToken] Returning token for meeting: ${input.meetingId}`);
             return {token};
         }),
 });
