@@ -8,9 +8,9 @@ import {
     StreamCall,
     StreamVideo,
     StreamVideoClient
-}from "@stream-io/video-react-sdk"
+} from "@stream-io/video-react-sdk"
 import { LoaderIcon } from "lucide-react";
-import { useEffect,useState } from "react";
+import { useEffect, useState } from "react";
 
 import "@stream-io/video-react-sdk/dist/css/styles.css"
 import { CallUI } from "./call-ui";
@@ -19,33 +19,35 @@ import { CallUI } from "./call-ui";
 
 
 
-interface Props{
-    meetingId:string;
-    meetingName:string;
-    userId:string;
-    userName:string;
-    userImage:string;
+interface Props {
+    meetingId: string;
+    meetingName: string;
+    startedAt?: Date | null;
+    userId: string;
+    userName: string;
+    userImage: string;
 }
 
-export const CallConnect=({
+export const CallConnect = ({
     meetingId,
     meetingName,
+    startedAt,
     userId,
     userName,
     userImage,
-}:Props) => {
+}: Props) => {
 
     const trpc = useTRPC();
-    const{mutateAsync:generateToken} = useMutation(
+    const { mutateAsync: generateToken } = useMutation(
         trpc.meetings.generateToken.mutationOptions(),
     );
 
-    const[client,setClient] = useState<StreamVideoClient>();
+    const [client, setClient] = useState<StreamVideoClient>();
     useEffect(() => {
         const _client = new StreamVideoClient(
             process.env.NEXT_PUBLIC_STREAM_VIDEO_API_KEY!
         );
-        
+
         const connect = async () => {
             await _client.connectUser(
                 {
@@ -60,40 +62,40 @@ export const CallConnect=({
             );
             setClient(_client);
         };
-        
+
         connect();
 
         return () => {
             _client.disconnectUser();
             setClient(undefined);
         }
-    },[userId, userName, userImage, generateToken, meetingId]);
+    }, [userId, userName, userImage, generateToken, meetingId]);
 
-    const [call,setCall]  = useState<Call>();
-    useEffect(() =>{
-        if(!client) return;
+    const [call, setCall] = useState<Call>();
+    useEffect(() => {
+        if (!client) return;
         const _call = client.call("default", meetingId);
         setCall(_call);
 
         return () => {
-            if(_call.state.callingState !== CallingState.LEFT){
+            if (_call.state.callingState !== CallingState.LEFT) {
                 _call.leave();
             }
         }
-    },[client, meetingId]);
+    }, [client, meetingId]);
 
-    if(!client || !call){
-         return(
+    if (!client || !call) {
+        return (
             <div className="flex h-screen items-center justify-center bg-radial from-sidebar-accent">
-                <LoaderIcon className="size-6 animate-spin text-white"/>
+                <LoaderIcon className="size-6 animate-spin text-white" />
             </div>
         );
     }
-    
-    return(
+
+    return (
         <StreamVideo client={client}>
             <StreamCall call={call}>
-                <CallUI meetingName={meetingName}/>
+                <CallUI meetingName={meetingName} startedAt={startedAt} />
             </StreamCall>
         </StreamVideo>
     )

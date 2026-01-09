@@ -5,37 +5,37 @@ import { useState } from "react";
 import { CallLobby } from "./call-lobby";
 import { Callactive } from "./call-active";
 import { CallEnded } from "./call-ended";
-interface Props{
-    meetingName:string;
-
+interface Props {
+    meetingName: string;
+    startedAt?: Date | null;
 };
 
-export const CallUI = ({meetingName}:Props) => {
+export const CallUI = ({ meetingName, startedAt }: Props) => {
     const call = useCall();
-    const [show, setShow] = useState<"lobby"|"call" | "ended">("lobby");
+    const [show, setShow] = useState<"lobby" | "call" | "ended">("lobby");
     const [joinError, setJoinError] = useState<string | null>(null);
     const [isJoining, setIsJoining] = useState(false);
 
     const handleJoin = async () => {
-        if(!call || call.state.callingState === CallingState.JOINED || isJoining) return;
+        if (!call || call.state.callingState === CallingState.JOINED || isJoining) return;
 
         try {
             setIsJoining(true);
             setJoinError(null);
-            
+
             console.log("[CallUI] Attempting to join call:", {
                 callId: call.id,
                 callType: call.type,
                 callingState: call.state.callingState,
             });
-            
+
             await call.join();
-            
+
             console.log("[CallUI] Successfully joined call:", {
                 callId: call.id,
                 callingState: call.state.callingState,
             });
-            
+
             setShow("call");
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Failed to join call";
@@ -52,18 +52,18 @@ export const CallUI = ({meetingName}:Props) => {
         }
     };
 
-    const handleLeave =() =>{
-        if(!call) return;
+    const handleLeave = () => {
+        if (!call) return;
 
         call.endCall();
         setShow("ended");
     };
 
-    return(
+    return (
         <StreamTheme className="h-full">
-            {show === "lobby" && <CallLobby onJoin={handleJoin} error={joinError} isJoining={isJoining}/>}
-            {show === "call" && <Callactive onLeave={handleLeave} meetingName={meetingName}/>}
-            {show === "ended" && <CallEnded/>}
+            {show === "lobby" && <CallLobby onJoin={handleJoin} error={joinError} isJoining={isJoining} />}
+            {show === "call" && <Callactive onLeave={handleLeave} meetingName={meetingName} startedAt={startedAt} />}
+            {show === "ended" && <CallEnded />}
         </StreamTheme>
     )
 }
