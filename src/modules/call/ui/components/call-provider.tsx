@@ -3,8 +3,6 @@
 import { LoaderIcon } from "lucide-react"
 
 import { AuthClient } from "@/lib/auth-client";
-import { GeneratedAvatar } from "@/components/generated-avatar";
-import { auth } from "@/lib/auth";
 import { CallConnect } from "./call-connect";
 import { generatedAvatarUri } from "@/lib/avatar";
 

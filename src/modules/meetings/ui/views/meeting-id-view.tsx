@@ -4,9 +4,6 @@ import { ErrorState } from "@/components/error-state";
 import { LoadingState } from "@/components/loading-state";
 import { useTRPC } from "@/trpc/client";
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, ClockIcon } from "lucide-react";
-import { format } from "date-fns";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -58,7 +55,7 @@ export const MeetingIdView = ({ meetingId }: Props) => {
     const isUpcoming = data.status === "upcoming";
     const isCancelled = data.status === "canclled";
     const isCompleted = data.status === "completed";
-    const isProcessing =data.status === "processing";
+    const isProcessing = data.status === "processing";
 
     return (
         <>
@@ -75,14 +72,14 @@ export const MeetingIdView = ({ meetingId }: Props) => {
                     onEdit={() => setUpdateMeetingDialogOpen(true)}
                     onRemove={handleRemoveMeeting}
                 />
-                {isCancelled && <CancelledState/>}
-                {isProcessing && <ProcessingState/>}
+                {isCancelled && <CancelledState />}
+                {isProcessing && <ProcessingState />}
                 {isCompleted && <div>Completed</div>}
-                {isActive && <ActiveState meetingId={meetingId}/>}
-                {isUpcoming && <UpcomingState 
-                meetingId={meetingId}
-                onCancelMeeting={() =>{}}
-                isCancelling={false}
+                {isActive && <ActiveState meetingId={meetingId} />}
+                {isUpcoming && <UpcomingState
+                    meetingId={meetingId}
+                    onCancelMeeting={() => { }}
+                    isCancelling={false}
                 />}
             </div>
         </>
