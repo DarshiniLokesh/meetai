@@ -34,7 +34,7 @@ export const summarizeTranscript = inngest.createFunction(
 
                 // Stream.io transcript format: array of transcript items
                 const transcriptText = data
-                    .map((item: any) => `${item.user_name || 'Unknown'}: ${item.text}`)
+                    .map((item: { user_name?: string; text: string }) => `${item.user_name || 'Unknown'}: ${item.text}`)
                     .join('\n');
 
                 console.log(`[Inngest] Transcript fetched (${transcriptText.length} characters)`);

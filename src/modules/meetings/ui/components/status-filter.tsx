@@ -1,4 +1,4 @@
-import { CircleXIcon, CircleCheckIcon,ClockArrowUpIcon,LoaderIcon,VideoIcon, ClockAlert  } from "lucide-react";
+import { CircleXIcon, CircleCheckIcon, ClockArrowUpIcon, LoaderIcon, VideoIcon } from "lucide-react";
 
 import { CommandSelect } from "@/components/command-select";
 import { MeetingStatus } from "../../types";
@@ -10,7 +10,7 @@ const options = [
         value: MeetingStatus.Upcoming,
         children: (
             <div className="flex items-center gap-x-2 capitalize">
-                <ClockArrowUpIcon/>
+                <ClockArrowUpIcon />
                 {MeetingStatus.Upcoming}
             </div>
         )
@@ -20,7 +20,7 @@ const options = [
         value: MeetingStatus.Completed,
         children: (
             <div className="flex items-center gap-x-2 capitalize">
-                <CircleCheckIcon/>
+                <CircleCheckIcon />
                 {MeetingStatus.Completed}
             </div>
         )
@@ -30,7 +30,7 @@ const options = [
         value: MeetingStatus.Active,
         children: (
             <div className="flex items-center gap-x-2 capitalize">
-                <VideoIcon/>
+                <VideoIcon />
                 {MeetingStatus.Active}
             </div>
         )
@@ -40,7 +40,7 @@ const options = [
         value: MeetingStatus.Processing,
         children: (
             <div className="flex items-center gap-x-2 capitalize">
-                <LoaderIcon/>
+                <LoaderIcon />
                 {MeetingStatus.Processing}
             </div>
         )
@@ -50,7 +50,7 @@ const options = [
         value: MeetingStatus.Cancelled,
         children: (
             <div className="flex items-center gap-x-2 capitalize">
-                <CircleXIcon/>
+                <CircleXIcon />
                 {MeetingStatus.Cancelled}
             </div>
         )
@@ -58,16 +58,16 @@ const options = [
 ];
 
 export const StatusFilter = () => {
-    const [filters, setFilters]  = useMeetingsFilters();
+    const [filters, setFilters] = useMeetingsFilters();
 
-    return(
+    return (
         <CommandSelect
-        placeholder="Status"
-        className="h-9"
-        options={options}
-        onSelect={(value) => setFilters({status: value as MeetingStatus})}
-        value={filters.status ?? ""}
-         />
+            placeholder="Status"
+            className="h-9"
+            options={options}
+            onSelect={(value) => setFilters({ status: value as MeetingStatus })}
+            value={filters.status ?? ""}
+        />
 
     );
 }
