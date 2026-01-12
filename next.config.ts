@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   // Turbopack configuration for Next.js 16
   turbopack: {},
   // Ensure these packages are not bundled and available at runtime (server-side only)
-  serverComponentsExternalPackages: [
+  serverExternalPackages: [
     'bufferutil',
     'utf-8-validate',
     '@stream-io/openai-realtime-api',
