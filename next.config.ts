@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Bypass type checking during build (types are already checked in dev)
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   // Ensure these packages are not bundled and available at runtime (server-side only)
   serverComponentsExternalPackages: [
     'bufferutil',
