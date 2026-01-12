@@ -14,9 +14,7 @@ const realtimeClients = new Map<string, { disconnect?: () => Promise<void> }>();
 import {
     CallEndedEvent,
     CallTranscriptionReadyEvent,
-    CallSessionParticipantLeftEvent,
     CallRecordingReadyEvent,
-    CallSessionStartedEvent,
 } from "@stream-io/node-sdk";
 
 // Helper function to connect agent to a call
@@ -43,161 +41,162 @@ async function connectAgentToCall(
             { id: agentId, name: agentName },
         ]);
 
-        // Generate token for agent
-        const agentToken = streamVideo.generateCallToken({
+        // Generate token for agent (not used directly, but needed for call connection)
+        streamVideo.generateCallToken({
             user_id: agentId,
             call_cids: [call.cid],
             validity_in_seconds: 3600,
         });
-        console.log(`[connectAgentToCall] Agent token generated`);
+    });
+    console.log(`[connectAgentToCall] Agent token generated`);
 
-        // Verify call state and members before connecting
-        try {
-            const callState = await call.get();
-            const agentIsMember = callState.members?.some(
-                (m: { user_id: string }) => m.user_id === agentId
-            );
-            const otherMembers = callState.members?.filter(
-                (m: { user_id: string }) => m.user_id !== agentId
-            ) || [];
+    // Verify call state and members before connecting
+    try {
+        const callState = await call.get();
+        const agentIsMember = callState.members?.some(
+            (m: { user_id: string }) => m.user_id === agentId
+        );
+        const otherMembers = callState.members?.filter(
+            (m: { user_id: string }) => m.user_id !== agentId
+        ) || [];
 
-            console.log(`[connectAgentToCall] Call state:`, {
-                callId: callState.call?.id,
-                sessionId: callState.call?.current_session_id,
-                agentIsMember,
-                otherMembersCount: otherMembers.length,
-            });
+        console.log(`[connectAgentToCall] Call state:`, {
+            callId: callState.call?.id,
+            sessionId: callState.call?.current_session_id,
+            agentIsMember,
+            otherMembersCount: otherMembers.length,
+        });
 
-            if (!agentIsMember) {
-                console.warn(`[connectAgentToCall] ⚠️ Agent is not a call member - this may cause issues`);
-            }
-        } catch (e) {
-            console.warn(`[connectAgentToCall] Could not verify call state:`, e);
+        if (!agentIsMember) {
+            console.warn(`[connectAgentToCall] ⚠️ Agent is not a call member - this may cause issues`);
         }
-
-        // Connect OpenAI Realtime client - this should automatically join the agent to the call
-        console.log(`[connectAgentToCall] Calling connectOpenAi...`);
-        const realtimeClient = await streamVideo.video.connectOpenAi({
-            call,
-            openAiApiKey: process.env.OPENAI_API_KEY!,
-            agentUserId: agentId,
-        });
-        console.log(`[connectAgentToCall] ✅ connectOpenAi returned successfully`);
-
-        console.log(`[connectAgentToCall] Realtime client connected`);
-
-        // Set up comprehensive event listeners
-        realtimeClient.on('session.updated', (event: unknown) => {
-            console.log(`[connectAgentToCall] Session updated:`, JSON.stringify(event, null, 2));
-        });
-
-        realtimeClient.on('conversation.item.input_audio_transcription.completed', (event: unknown) => {
-            console.log(`[connectAgentToCall] ✅ TRANSCRIPTION RECEIVED:`, JSON.stringify(event, null, 2));
-        });
-
-        realtimeClient.on('conversation.item.input_audio_transcription.failed', (event: unknown) => {
-            console.error(`[connectAgentToCall] ❌ Transcription failed:`, JSON.stringify(event, null, 2));
-        });
-
-        realtimeClient.on('conversation.item.output_audio.delta', () => {
-            console.log(`[connectAgentToCall] 🔊 Agent generating audio response`);
-        });
-
-        realtimeClient.on('conversation.item.output_audio.done', () => {
-            console.log(`[connectAgentToCall] ✅ Agent finished generating audio`);
-        });
-
-        realtimeClient.on('input_audio_buffer.speech_started', () => {
-            console.log(`[connectAgentToCall] 🎤 SPEECH DETECTED - Agent is listening!`);
-        });
-
-        realtimeClient.on('input_audio_buffer.speech_stopped', () => {
-            console.log(`[connectAgentToCall] 🎤 Speech stopped`);
-        });
-
-        realtimeClient.on('input_audio_buffer.committed', () => {
-            console.log(`[connectAgentToCall] 🎤 Audio buffer committed`);
-        });
-
-        realtimeClient.on('conversation.item.created', (event: unknown) => {
-            console.log(`[connectAgentToCall] 📝 Conversation item created:`, JSON.stringify(event, null, 2));
-        });
-
-        realtimeClient.on('response.audio_transcript.delta', (event: unknown) => {
-            console.log(`[connectAgentToCall] 📝 Response transcript delta:`, JSON.stringify(event, null, 2));
-        });
-
-        realtimeClient.on('response.audio_transcript.done', (event: unknown) => {
-            console.log(`[connectAgentToCall] ✅ Response transcript done:`, JSON.stringify(event, null, 2));
-        });
-
-        realtimeClient.on('error', (error: unknown) => {
-            console.error(`[connectAgentToCall] ❌ Error:`, JSON.stringify(error, null, 2));
-        });
-
-        realtimeClient.on('connection.closed', () => {
-            console.log(`[connectAgentToCall] ⚠️ Connection closed - cleaning up`);
-            agentConnections.delete(connectionKey);
-            realtimeClients.delete(connectionKey);
-        });
-
-        // Wait for connection to stabilize
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        // Update session with instructions and ensure audio is enabled
-        const sessionUpdate: Record<string, unknown> = {
-            instructions: instructions || "You are a helpful AI assistant in a video call. Listen carefully and respond naturally.",
-            voice: "alloy",
-            temperature: 0.8,
-            // Enable Voice Activity Detection (VAD) for automatic speech detection
-            turn_detection: {
-                type: "server_vad",
-                threshold: 0.5,
-                prefix_padding_ms: 300,
-                silence_duration_ms: 500,
-            },
-            // Enable input audio transcription
-            input_audio_transcription: {
-                model: "whisper-1"
-            }
-        };
-
-        realtimeClient.updateSession(sessionUpdate);
-
-        console.log(`[connectAgentToCall] Session updated with instructions`);
-
-        // Wait for session to be ready
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // Verify connection is still active
-        try {
-            const isConnected = realtimeClient.isConnected?.() ?? false;
-            console.log(`[connectAgentToCall] Connection status: ${isConnected ? '✅ CONNECTED' : '❌ DISCONNECTED'}`);
-            if (!isConnected) {
-                throw new Error('Realtime client disconnected after connection');
-            }
-        } catch (e) {
-            console.warn(`[connectAgentToCall] Could not verify connection status:`, e);
-        }
-
-        // Store client to keep it alive
-        agentConnections.add(connectionKey);
-        realtimeClients.set(connectionKey, {
-            disconnect: async () => {
-                try {
-                    await realtimeClient.disconnect();
-                } catch (e) {
-                    console.error(`[connectAgentToCall] Error disconnecting:`, e);
-                }
-            }
-        });
-
-        console.log(`[connectAgentToCall] ✅ Agent successfully connected and ready: ${connectionKey}`);
-
-    } catch (error) {
-        console.error(`[connectAgentToCall] Failed to connect agent:`, error);
-        throw error;
+    } catch (e) {
+        console.warn(`[connectAgentToCall] Could not verify call state:`, e);
     }
+
+    // Connect OpenAI Realtime client - this should automatically join the agent to the call
+    console.log(`[connectAgentToCall] Calling connectOpenAi...`);
+    const realtimeClient = await streamVideo.video.connectOpenAi({
+        call,
+        openAiApiKey: process.env.OPENAI_API_KEY!,
+        agentUserId: agentId,
+    });
+    console.log(`[connectAgentToCall] ✅ connectOpenAi returned successfully`);
+
+    console.log(`[connectAgentToCall] Realtime client connected`);
+
+    // Set up comprehensive event listeners
+    realtimeClient.on('session.updated', (event: unknown) => {
+        console.log(`[connectAgentToCall] Session updated:`, JSON.stringify(event, null, 2));
+    });
+
+    realtimeClient.on('conversation.item.input_audio_transcription.completed', (event: unknown) => {
+        console.log(`[connectAgentToCall] ✅ TRANSCRIPTION RECEIVED:`, JSON.stringify(event, null, 2));
+    });
+
+    realtimeClient.on('conversation.item.input_audio_transcription.failed', (event: unknown) => {
+        console.error(`[connectAgentToCall] ❌ Transcription failed:`, JSON.stringify(event, null, 2));
+    });
+
+    realtimeClient.on('conversation.item.output_audio.delta', () => {
+        console.log(`[connectAgentToCall] 🔊 Agent generating audio response`);
+    });
+
+    realtimeClient.on('conversation.item.output_audio.done', () => {
+        console.log(`[connectAgentToCall] ✅ Agent finished generating audio`);
+    });
+
+    realtimeClient.on('input_audio_buffer.speech_started', () => {
+        console.log(`[connectAgentToCall] 🎤 SPEECH DETECTED - Agent is listening!`);
+    });
+
+    realtimeClient.on('input_audio_buffer.speech_stopped', () => {
+        console.log(`[connectAgentToCall] 🎤 Speech stopped`);
+    });
+
+    realtimeClient.on('input_audio_buffer.committed', () => {
+        console.log(`[connectAgentToCall] 🎤 Audio buffer committed`);
+    });
+
+    realtimeClient.on('conversation.item.created', (event: unknown) => {
+        console.log(`[connectAgentToCall] 📝 Conversation item created:`, JSON.stringify(event, null, 2));
+    });
+
+    realtimeClient.on('response.audio_transcript.delta', (event: unknown) => {
+        console.log(`[connectAgentToCall] 📝 Response transcript delta:`, JSON.stringify(event, null, 2));
+    });
+
+    realtimeClient.on('response.audio_transcript.done', (event: unknown) => {
+        console.log(`[connectAgentToCall] ✅ Response transcript done:`, JSON.stringify(event, null, 2));
+    });
+
+    realtimeClient.on('error', (error: unknown) => {
+        console.error(`[connectAgentToCall] ❌ Error:`, JSON.stringify(error, null, 2));
+    });
+
+    realtimeClient.on('connection.closed', () => {
+        console.log(`[connectAgentToCall] ⚠️ Connection closed - cleaning up`);
+        agentConnections.delete(connectionKey);
+        realtimeClients.delete(connectionKey);
+    });
+
+    // Wait for connection to stabilize
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Update session with instructions and ensure audio is enabled
+    const sessionUpdate: Record<string, unknown> = {
+        instructions: instructions || "You are a helpful AI assistant in a video call. Listen carefully and respond naturally.",
+        voice: "alloy",
+        temperature: 0.8,
+        // Enable Voice Activity Detection (VAD) for automatic speech detection
+        turn_detection: {
+            type: "server_vad",
+            threshold: 0.5,
+            prefix_padding_ms: 300,
+            silence_duration_ms: 500,
+        },
+        // Enable input audio transcription
+        input_audio_transcription: {
+            model: "whisper-1"
+        }
+    };
+
+    realtimeClient.updateSession(sessionUpdate);
+
+    console.log(`[connectAgentToCall] Session updated with instructions`);
+
+    // Wait for session to be ready
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Verify connection is still active
+    try {
+        const isConnected = realtimeClient.isConnected?.() ?? false;
+        console.log(`[connectAgentToCall] Connection status: ${isConnected ? '✅ CONNECTED' : '❌ DISCONNECTED'}`);
+        if (!isConnected) {
+            throw new Error('Realtime client disconnected after connection');
+        }
+    } catch (e) {
+        console.warn(`[connectAgentToCall] Could not verify connection status:`, e);
+    }
+
+    // Store client to keep it alive
+    agentConnections.add(connectionKey);
+    realtimeClients.set(connectionKey, {
+        disconnect: async () => {
+            try {
+                await realtimeClient.disconnect();
+            } catch (e) {
+                console.error(`[connectAgentToCall] Error disconnecting:`, e);
+            }
+        }
+    });
+
+    console.log(`[connectAgentToCall] ✅ Agent successfully connected and ready: ${connectionKey}`);
+
+} catch (error) {
+    console.error(`[connectAgentToCall] Failed to connect agent:`, error);
+    throw error;
+}
 }
 
 
