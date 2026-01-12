@@ -3,7 +3,6 @@
 import { LogInIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AuthClient } from "@/lib/auth-client";
 import { generatedAvatarUri } from "@/lib/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +17,7 @@ import {
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 
 
-interface Props{
+interface Props {
     onJoin: () => void;
     error?: string | null;
     isJoining?: boolean;
@@ -27,7 +26,7 @@ interface Props{
 const VideoPlaceholder = () => {
     const { useLocalParticipant } = useCallStateHooks();
     const localParticipant = useLocalParticipant();
-    
+
     return (
         <DefaultVideoPlaceholder
             participant={
@@ -45,17 +44,17 @@ const VideoPlaceholder = () => {
     );
 };
 
- const AllowBrowserPermission = () => {
+const AllowBrowserPermission = () => {
     return (
         <p className="text-sm">
             Please grant permission to access your camera and microphone
         </p>
     )
- }
+}
 
-export const CallLobby = ({onJoin, error, isJoining = false}: Props) => {
+export const CallLobby = ({ onJoin, error, isJoining = false }: Props) => {
     const [mounted, setMounted] = useState(false);
-    
+
     useEffect(() => {
         setMounted(true);
     }, []);
@@ -88,37 +87,37 @@ export const CallLobby = ({onJoin, error, isJoining = false}: Props) => {
                     <div className="flex flex-col gap-y-2 text-center">
                         <h6 className="text-lg font-medium">Ready to Join?</h6>
                         <p className="text-sm"> Set up your call before joining</p>
-                        </div>
-                        {hasBrowserMediaPermission ? (
-                            <VideoPreview />
-                        ) : (
-                            <AllowBrowserPermission />
-                        )}
+                    </div>
+                    {hasBrowserMediaPermission ? (
+                        <VideoPreview />
+                    ) : (
+                        <AllowBrowserPermission />
+                    )}
 
-                        <div className="flex gap-x-2">
-                            <ToggleAudioPreviewButton/>
-                            <ToggleVideoPreviewButton/>
+                    <div className="flex gap-x-2">
+                        <ToggleAudioPreviewButton />
+                        <ToggleVideoPreviewButton />
 
+                    </div>
+                    {error && (
+                        <div className="w-full rounded-md bg-destructive/10 border border-destructive/20 p-3">
+                            <p className="text-sm text-destructive text-center">{error}</p>
                         </div>
-                        {error && (
-                            <div className="w-full rounded-md bg-destructive/10 border border-destructive/20 p-3">
-                                <p className="text-sm text-destructive text-center">{error}</p>
-                            </div>
-                        )}
-                        <div className="flex gap-x-2 justify-between w-full">
-                            <Button asChild variant="ghost">
-                                <Link href = "/meetings">
+                    )}
+                    <div className="flex gap-x-2 justify-between w-full">
+                        <Button asChild variant="ghost">
+                            <Link href="/meetings">
                                 Cancel
-                                </Link>
-                            </Button>
-                            <Button
+                            </Link>
+                        </Button>
+                        <Button
                             onClick={onJoin}
                             disabled={isJoining}
-                            >
-                                <LogInIcon/>
-                                {isJoining ? "Joining..." : "Join Call"}
-                            </Button>
-                        </div>
+                        >
+                            <LogInIcon />
+                            {isJoining ? "Joining..." : "Join Call"}
+                        </Button>
+                    </div>
 
 
 

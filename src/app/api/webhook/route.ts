@@ -99,11 +99,11 @@ async function connectAgentToCall(
             console.error(`[connectAgentToCall] ❌ Transcription failed:`, JSON.stringify(event, null, 2));
         });
 
-        realtimeClient.on('conversation.item.output_audio.delta', (_event: unknown) => {
+        realtimeClient.on('conversation.item.output_audio.delta', () => {
             console.log(`[connectAgentToCall] 🔊 Agent generating audio response`);
         });
 
-        realtimeClient.on('conversation.item.output_audio.done', (_event: unknown) => {
+        realtimeClient.on('conversation.item.output_audio.done', () => {
             console.log(`[connectAgentToCall] ✅ Agent finished generating audio`);
         });
 
