@@ -1,13 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Bypass type checking during build (types are already checked in dev)
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Turbopack configuration for Next.js 16
+  turbopack: {},
   // Ensure these packages are not bundled and available at runtime (server-side only)
   serverComponentsExternalPackages: [
     'bufferutil',
