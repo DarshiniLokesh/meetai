@@ -14,9 +14,7 @@ const realtimeClients = new Map<string, { disconnect?: () => Promise<void> }>();
 import {
     CallEndedEvent,
     CallTranscriptionReadyEvent,
-    CallSessionParticipantLeftEvent,
     CallRecordingReadyEvent,
-    CallSessionStartedEvent,
 } from "@stream-io/node-sdk";
 
 // Helper function to connect agent to a call
@@ -43,8 +41,8 @@ async function connectAgentToCall(
             { id: agentId, name: agentName },
         ]);
 
-        // Generate token for agent
-        const agentToken = streamVideo.generateCallToken({
+        // Generate token for agent (not used directly, but needed for call connection)
+        streamVideo.generateCallToken({
             user_id: agentId,
             call_cids: [call.cid],
             validity_in_seconds: 3600,
@@ -99,11 +97,11 @@ async function connectAgentToCall(
             console.error(`[connectAgentToCall] ❌ Transcription failed:`, JSON.stringify(event, null, 2));
         });
 
-        realtimeClient.on('conversation.item.output_audio.delta', (_event: unknown) => {
+        realtimeClient.on('conversation.item.output_audio.delta', () => {
             console.log(`[connectAgentToCall] 🔊 Agent generating audio response`);
         });
 
-        realtimeClient.on('conversation.item.output_audio.done', (_event: unknown) => {
+        realtimeClient.on('conversation.item.output_audio.done', () => {
             console.log(`[connectAgentToCall] ✅ Agent finished generating audio`);
         });
 
