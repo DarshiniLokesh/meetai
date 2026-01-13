@@ -1,30 +1,26 @@
-import {betterAuth } from "better-auth";
-import {drizzleAdapter} from "better-auth/adapters/drizzle";
-import {db} from "@/db";
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { db } from "@/db";
 import * as schema from "@/db/schema";
 
 export const auth = betterAuth({
     socialProviders: {
-        github: { 
-            clientId: process.env.GITHUB_CLIENT_ID as string, 
-            clientSecret: process.env.GITHUB_CLIENT_SECRET as string, 
-        }, 
-        
-            google: { 
-                clientId: process.env.GOOGLE_CLIENT_ID as string, 
-                clientSecret: process.env.GOOGLE_CLIENT_SECRET as string, 
-            }, 
-        
+        github: {
+            clientId: process.env.GITHUB_CLIENT_ID as string,
+            clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+        },
+
+        google: {
+            clientId: process.env.GOOGLE_CLIENT_ID as string,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+        },
+
     },
-    trustedOrigins: [
-        "http://localhost:3000",
-        "http://192.168.0.155:3000",
-        "http://192.168.0.155:3001",
-    ],
-    emailAndPassword:{
-        enabled:true,
+
+    emailAndPassword: {
+        enabled: true,
     },
-    database:drizzleAdapter(db,{
+    database: drizzleAdapter(db, {
         provider: "pg",
         schema: {
             ...schema,

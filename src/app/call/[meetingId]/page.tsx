@@ -11,7 +11,7 @@ interface Props {
     }>;
 };
 
-const CallPage = async ({ params }: Props) => {
+export const Page = async ({ params }: Props) => {
     const session = await auth.api.getSession({
         headers: await headers(),
 
@@ -33,4 +33,4 @@ const CallPage = async ({ params }: Props) => {
         </HydrationBoundary>
     )
 }
-export default CallPage;
+export default Page;

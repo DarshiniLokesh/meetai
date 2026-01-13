@@ -103,30 +103,5 @@ export const columns: ColumnDef<MeetingGetMany[number]>[] = [
             </Badge>
         )
     },
-    {
-        accessorKey: "summary",
-        header: "Summary",
-        cell: ({ row }) => {
-            const summary = row.original.summary;
-
-            if (!summary) {
-                return (
-                    <span className="text-sm text-muted-foreground italic">
-                        No summary yet
-                    </span>
-                );
-            }
-
-            const truncated = summary.length > 100 ? summary.substring(0, 100) + "..." : summary;
-
-            return (
-                <div className="max-w-md">
-                    <p className="text-sm text-muted-foreground line-clamp-2" title={summary}>
-                        {truncated}
-                    </p>
-                </div>
-            );
-        }
-    },
 
 ];
