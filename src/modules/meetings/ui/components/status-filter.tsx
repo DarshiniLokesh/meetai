@@ -1,4 +1,4 @@
-import { CircleXIcon, CircleCheckIcon, ClockArrowUpIcon, LoaderIcon, VideoIcon } from "lucide-react";
+import { CircleXIcon, CircleCheckIcon, ClockArrowUpIcon, LoaderIcon, VideoIcon, ClockAlert } from "lucide-react";
 
 import { CommandSelect } from "@/components/command-select";
 import { MeetingStatus } from "../../types";

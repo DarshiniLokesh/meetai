@@ -14,7 +14,9 @@ const realtimeClients = new Map<string, { disconnect?: () => Promise<void> }>();
 import {
     CallEndedEvent,
     CallTranscriptionReadyEvent,
+    CallSessionParticipantLeftEvent,
     CallRecordingReadyEvent,
+    CallSessionStartedEvent,
 } from "@stream-io/node-sdk";
 
 // Helper function to connect agent to a call
@@ -41,8 +43,8 @@ async function connectAgentToCall(
             { id: agentId, name: agentName },
         ]);
 
-        // Generate token for agent (not used directly, but needed for call connection)
-        streamVideo.generateCallToken({
+        // Generate token for agent
+        const agentToken = streamVideo.generateCallToken({
             user_id: agentId,
             call_cids: [call.cid],
             validity_in_seconds: 3600,
@@ -97,11 +99,11 @@ async function connectAgentToCall(
             console.error(`[connectAgentToCall] ❌ Transcription failed:`, JSON.stringify(event, null, 2));
         });
 
-        realtimeClient.on('conversation.item.output_audio.delta', () => {
+        realtimeClient.on('conversation.item.output_audio.delta', (_event: unknown) => {
             console.log(`[connectAgentToCall] 🔊 Agent generating audio response`);
         });
 
-        realtimeClient.on('conversation.item.output_audio.done', () => {
+        realtimeClient.on('conversation.item.output_audio.done', (_event: unknown) => {
             console.log(`[connectAgentToCall] ✅ Agent finished generating audio`);
         });
 
@@ -147,17 +149,6 @@ async function connectAgentToCall(
             instructions: instructions || "You are a helpful AI assistant in a video call. Listen carefully and respond naturally.",
             voice: "alloy",
             temperature: 0.8,
-            // Enable Voice Activity Detection (VAD) for automatic speech detection
-            turn_detection: {
-                type: "server_vad",
-                threshold: 0.5,
-                prefix_padding_ms: 300,
-                silence_duration_ms: 500,
-            },
-            // Enable input audio transcription
-            input_audio_transcription: {
-                model: "whisper-1"
-            }
         };
 
         realtimeClient.updateSession(sessionUpdate);
@@ -203,22 +194,7 @@ function verifySignatureWithSDK(body: string, signature: string): boolean {
     return streamVideo.verifyWebhook(body, signature);
 }
 
-/**
- * GET endpoint for webhook verification/health check
- */
-export async function GET() {
-    console.log('[Webhook] GET request received - health check');
-    return NextResponse.json({
-        status: 'ok',
-        message: 'Webhook endpoint is accessible',
-        timestamp: new Date().toISOString()
-    });
-}
-
 export async function POST(req: NextRequest) {
-    console.log('[Webhook] ========== NEW WEBHOOK REQUEST ==========');
-    console.log('[Webhook] Headers:', Object.fromEntries(req.headers.entries()));
-
     const signature = req.headers.get("x-signature");
     const apiKey = req.headers.get("x-api-key");
 
@@ -427,67 +403,8 @@ export async function POST(req: NextRequest) {
             })
             .where(eq(meetings.id, meetingId));
     }
-    else if (eventType === "call.transcription_ready") {
-        const event = payload as CallTranscriptionReadyEvent;
-        const meetingId = event.call_cid.split(":")[1];
 
-        if (!meetingId) {
-            return NextResponse.json({ error: "Missing meetingId" }, { status: 400 });
-        }
 
-        console.log(`[Webhook] Transcription ready for meeting: ${meetingId}`);
-
-        const transcriptUrl = event.call_transcription?.url;
-
-        if (!transcriptUrl) {
-            console.error(`[Webhook] No transcript URL in event`);
-            return NextResponse.json({ error: "No transcript URL" }, { status: 400 });
-        }
-
-        await db
-            .update(meetings)
-            .set({ transcriptUrl })
-            .where(eq(meetings.id, meetingId));
-
-        console.log(`[Webhook] Transcript URL saved: ${transcriptUrl}`);
-
-        try {
-            const { inngest } = await import('@/lib/inngest');
-
-            await inngest.send({
-                name: 'call/transcription.ready',
-                data: { meetingId, transcriptUrl }
-            });
-
-            console.log(`[Webhook] ✅ Triggered summarization job for meeting: ${meetingId}`);
-        } catch (error) {
-            console.error(`[Webhook] Failed to trigger Inngest job:`, error);
-        }
-    }
-    else if (eventType === "call.recording_ready") {
-        const event = payload as CallRecordingReadyEvent;
-        const meetingId = event.call_cid.split(":")[1];
-
-        if (!meetingId) {
-            return NextResponse.json({ error: "Missing meetingId" }, { status: 400 });
-        }
-
-        console.log(`[Webhook] Recording ready for meeting: ${meetingId}`);
-
-        const recordingUrl = event.call_recording?.url;
-
-        if (!recordingUrl) {
-            console.error(`[Webhook] No recording URL in event`);
-            return NextResponse.json({ error: "No recording URL" }, { status: 400 });
-        }
-
-        await db
-            .update(meetings)
-            .set({ recordingUrl })
-            .where(eq(meetings.id, meetingId));
-
-        console.log(`[Webhook] ✅ Recording URL saved: ${recordingUrl}`);
-    }
 
     return NextResponse.json({ status: "ok" });
 }
